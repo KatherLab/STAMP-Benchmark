@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .data import make_dataset, SKLearnEncoder
-from .TransMIL import TransMIL
+from .SophiaMIL import WagnerMIL
 
 
 __all__ = ['train', 'deploy']
@@ -35,6 +35,8 @@ def train(
     path: Optional[Path] = None,
     batch_size: int = 64,
     cores: int = 8,
+    model_arch: str = "sophia_mil",
+    pretrained: Optional[Path] = None,
     plot: bool = False
 ) -> Learner:
     """Train a MLP on image features.
@@ -81,10 +83,26 @@ def train(
     feature_dim = batch[0].shape[-1]
 
     # for binary classification num_classes=2
-    model = TransMIL(
-        num_classes=len(target_enc.categories_[0]), input_dim=feature_dim,
-        dim=512, depth=2, heads=8, mlp_dim=512, dropout=.0
-    )
+    if model_arch == "sophia_mil":
+        model = WagnerMIL(
+            num_classes=len(target_enc.categories_[0]), input_dim=feature_dim,
+            dim=512, depth=2, heads=8, mlp_dim=512, dropout=.0
+        )
+    elif model_arch == "cobra":
+        embed_dim = 768 
+        c_dim = 512
+        input_dim = embed_dim
+        layer =2
+        att_dim = 256
+        model = MambaMILmocoWrap(embed_dim,c_dim,input_dim,layer=nr_mamba_layers,att_dim=att_dim) 
+        if pretrained:
+            chkpt = torch.load(pretrained)
+            if "state_dict" in list(chkpt.keys()):
+                chkpt = chkpt["state_dict"]
+            base_enc = {k.split(f"{enc}.")[-1]:v for k,v in chkpt.items() if enc in k}
+            model.load_state_dict(base_enc)
+        model.proj = nn.Identity()
+            
     # TODO:
     # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?
     # maybe add at least some dropout?

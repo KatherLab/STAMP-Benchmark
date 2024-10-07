@@ -15,7 +15,10 @@ def main():
     parser.add_argument("--cat_labels", type=str, nargs="+", default=[], help="Category labels")
     parser.add_argument("--cont_labels", type=str, nargs="+", default=[], help="Continuous labels")
     parser.add_argument("--categories", type=str, nargs="+", default=None, help="Categories")
+    parser.add_argument("--model_arch", type=str, default="WagnerMIL", help="MIL Architecture")
+    parser.add_argument("--pretrained", type=Path, default=None, help="Path to the pretrained model")
 
+    
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--one_model", action="store_true", help="Run full training instead of cross-validation")
     group.add_argument("--deploy_model", type=Path, help="Path to the model .pkl to deploy")

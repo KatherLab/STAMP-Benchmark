@@ -52,6 +52,8 @@ def train_categorical_model_(
     cat_labels: Sequence[str] = [],
     cont_labels: Sequence[str] = [],
     categories: Optional[Iterable[str]] = None,
+    model_arch: str = "sophia_mil",
+    pretrained: Optional[Path] = None,
 ) -> None:
     """Train a categorical model on a cohort's tile's features.
 
@@ -135,7 +137,9 @@ def train_categorical_model_(
         add_features=add_features,
         valid_idxs=df.PATIENT.isin(valid_patients).values,
         path=output_path,
-        cores=max(1, os.cpu_count() // 4)
+        cores=max(1, os.cpu_count() // 4),
+        model_arch = model_arch,
+        pretrained = pretrained,
     )
 
     # save some additional information to the learner to make deployment easier

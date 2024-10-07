@@ -108,7 +108,7 @@ class Transformer(nn.Module):
         return self.norm(x)
 
 
-class TransMIL(nn.Module):
+class WagnerMIL(nn.Module):
     def __init__(self, *, 
         num_classes: int, input_dim: int = 768, dim: int = 512,
         depth: int = 2, heads: int = 8, dim_head: int = 64, mlp_dim: int = 2048,
