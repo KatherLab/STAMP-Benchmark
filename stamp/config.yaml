@@ -22,7 +22,7 @@ modeling:
   clini_table: /mnt/bulk-curie/peter/fmbenchmark/tables/clinical_tables/tcga_crc.csv
   slide_table: /mnt/bulk-curie/peter/fmbenchmark/tables/slide_tables/slide_table_tcga_crc.csv
   feature_dir: /mnt/bulk-curie/peter/fmbenchmark/features/tcga_crc/virchow2-class/STAMP_raw_virchow2
-  output_dir: /mnt/bulk-curie/peter/fmbenchmark/wsi_moco/finetuning/models/cobra-virchow2/crc/ismsih
+  output_dir: /mnt/bulk-curie/peter/fmbenchmark/wsi_moco/finetuning/models/cobra-virchow2-wa/crc/ismsih
   target_label: isMSIH
   categories: [] # Categories (list), leave empty to automatically infer based on unique values in the target_label column
   cat_labels: [] # Extra input category labels (list, can be empty)

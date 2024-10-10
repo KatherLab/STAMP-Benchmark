@@ -102,8 +102,9 @@ def train(
                 chkpt = chkpt["state_dict"]
             base_enc = {k.split("enc.")[-1]:v for k,v in chkpt.items() if "enc" in k}
             print(f"Loading state dict from {pretrained}")
-            model.load_state_dict(base_enc)
-        model.proj = nn.Linear(embed_dim,len(target_enc.categories_[0]))
+            msg=model.load_state_dict(base_enc)
+            print(msg)
+        model.proj = nn.Linear(1280,len(target_enc.categories_[0]))
             
     # TODO:
     # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?

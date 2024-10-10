@@ -17,7 +17,7 @@ class Embed(nn.Module):
              nn.LayerNorm(dim),
              nn.Linear(dim, embed_dim),
              #nn.Identity(),
-             nn.Dropout(0.25),
+             #nn.Dropout(0.25),
              nn.SiLU(),
              nn.Linear(embed_dim, embed_dim),
         )
@@ -46,7 +46,7 @@ class MambaMILmocoWrap(nn.Module):
             #nn.BatchNorm1d(c_dim),
         )
 
-        self.classifier = nn.Linear(embed_dim,num_classes)
+        #self.classifier = nn.Linear(embed_dim,num_classes)
         for param in self.mamba_mil.parameters():
             param.requires_grad = False
         for param in self.mamba_mil.attention.parameters():
@@ -54,7 +54,7 @@ class MambaMILmocoWrap(nn.Module):
         for param in self.mamba_mil.classifier.parameters():
             param.requires_grad = True
             
-    def forward(self, x,lens,get_tile_embs=False,get_weighted_avg=False):
+    def forward(self, x,lens,get_tile_embs=False,get_weighted_avg=True):
        
         
         #if self.use_embed:
