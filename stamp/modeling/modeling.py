@@ -57,7 +57,10 @@ def main():
                               cat_labels=args.cat_labels,
                               cont_labels=args.cont_labels,
                               categories=args.categories,
-                              n_splits=args.n_splits)
+                              n_splits=args.n_splits,
+                              model_arch=args.model_arch,
+                              pretrained=args.pretrained
+                              )
 
 
 if __name__ == "__main__":

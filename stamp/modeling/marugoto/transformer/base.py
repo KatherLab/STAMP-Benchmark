@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from .cobra import MambaMILmocoWrap
 from .data import make_dataset, SKLearnEncoder
 from .SophiaMIL import WagnerMIL
 
@@ -92,16 +93,17 @@ def train(
         embed_dim = 768 
         c_dim = 512
         input_dim = embed_dim
-        layer =2
+        layer = 2
         att_dim = 256
-        model = MambaMILmocoWrap(embed_dim,c_dim,input_dim,layer=nr_mamba_layers,att_dim=att_dim) 
+        model = MambaMILmocoWrap(embed_dim,c_dim,input_dim,layer=layer,att_dim=att_dim) 
         if pretrained:
             chkpt = torch.load(pretrained)
             if "state_dict" in list(chkpt.keys()):
                 chkpt = chkpt["state_dict"]
-            base_enc = {k.split(f"{enc}.")[-1]:v for k,v in chkpt.items() if enc in k}
+            base_enc = {k.split("enc.")[-1]:v for k,v in chkpt.items() if "enc" in k}
+            print(f"Loading state dict from {pretrained}")
             model.load_state_dict(base_enc)
-        model.proj = nn.Identity()
+        model.proj = nn.Linear(embed_dim,len(target_enc.categories_[0]))
             
     # TODO:
     # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?

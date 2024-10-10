@@ -241,6 +241,8 @@ def categorical_crossval_(
     cont_labels: Sequence[str] = [],
     n_splits: int = 5,
     categories: Optional[Iterable[str]] = None,
+    model_arch: str = "sophia_mil",
+    pretrained: Optional[Path] = None,
 ) -> None:
     """Performs a cross-validation for a categorical target.
 
@@ -341,7 +343,8 @@ def categorical_crossval_(
             learn = _crossval_train(
                 fold_path=fold_path, fold_df=fold_train_df, fold=fold, info=info,
                 target_label=target_label, target_enc=target_enc,
-                cat_labels=cat_labels, cont_labels=cont_labels)
+                cat_labels=cat_labels, cont_labels=cont_labels,
+                model_arch=model_arch, pretrained=pretrained)
             learn.export()
 
         fold_test_df = df.iloc[test_idxs]
@@ -353,7 +356,7 @@ def categorical_crossval_(
 
 
 def _crossval_train(
-    *, fold_path, fold_df, fold, info, target_label, target_enc, cat_labels, cont_labels
+    *, fold_path, fold_df, fold, info, target_label, target_enc, cat_labels, cont_labels, model_arch, pretrained,
 ):
     """Helper function for training the folds."""
     assert fold_df.PATIENT.nunique() == len(fold_df)
@@ -384,7 +387,9 @@ def _crossval_train(
         add_features=add_features,
         valid_idxs=fold_df.PATIENT.isin(valid_patients),
         path=fold_path,
-        cores=max(1, os.cpu_count() // 4)
+        cores=max(1, os.cpu_count() // 4),
+        model_arch=model_arch,
+        pretrained=pretrained,
     )
     learn.target_label = target_label
     learn.cat_labels, learn.cont_labels = cat_labels, cont_labels

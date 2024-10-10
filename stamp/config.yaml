@@ -6,44 +6,46 @@
 # Only use absolute paths!
 
 preprocessing:
-  output_dir: # Path to save features to
-  wsi_dir: # Path of where the whole-slide images are.
-  cache_dir: # Directory to store intermediate slide JPGs
+  output_dir: /mnt/bulk-curie/peter/fmbenchmark/aligned_vecs/models/chief/lung/cancer_type
+  wsi_dir:  # Path of where the whole-slide images are.
+  cache_dir:  # Directory to store intermediate slide JPGs
   microns: 256 # Edge length in microns for each patch (default is 256, with pixel size 224, 256/224 = ~1.14MPP = ~9x magnification)
   norm: false # Perform Macenko normalisation
-  feat_extractor: ctp # Use ctp for CTransPath (default) or uni for UNI (requires prior authentication)
+  feat_extractor: conch # Use ctp, uni, provgp, provgpslide, hibou, kaiko, conch, phikon
   del_slide: false # Remove the original slide after processing
-  cache: true # Save intermediate images (slide, background rejected, normalized)
-  only_feature_extraction: false # Only perform feature extraction (intermediate images (background rejected, [normalized]) have to exist)
+  cache: false # Save intermediate images (slide, background rejected, normalized)
+  only_feature_extraction: true # Only perform feature extraction (intermediate images (background rejected, [normalized]) have to exist)
   cores: 8 # CPU cores to use
   device: cuda:0 # device to run feature extraction on (cpu, cuda, cuda:0, etc.)
 
 modeling:
-  clini_table: # Path to clini_table file (.xlsx or .csv)
-  slide_table: # Path to slide_table file (.xlsx or .csv)
-  feature_dir: ${preprocessing.output_dir}/STAMP_macenko_xiyuewang-ctranspath-7c998680 # Path to feature directory
-  output_dir: # Path to output directory
-  target_label: # Target label. No spaces allowed! Format clinical table accordingly
+  clini_table: /mnt/bulk-curie/peter/fmbenchmark/tables/clinical_tables/tcga_crc.csv
+  slide_table: /mnt/bulk-curie/peter/fmbenchmark/tables/slide_tables/slide_table_tcga_crc.csv
+  feature_dir: /mnt/bulk-curie/peter/fmbenchmark/features/tcga_crc/virchow2-class/STAMP_raw_virchow2
+  output_dir: /mnt/bulk-curie/peter/fmbenchmark/wsi_moco/finetuning/models/cobra-virchow2/crc/ismsih
+  target_label: isMSIH
   categories: [] # Categories (list), leave empty to automatically infer based on unique values in the target_label column
   cat_labels: [] # Extra input category labels (list, can be empty)
   cont_labels: [] # Extra input continuous labels (list, can be empty)
   n_splits: 5 # Number of splits for cross-validation (only applicable to cross-validation)
-  model_path: /path/to/export.pkl # Path to saved model (only applicable to deployment)
-  deploy_feature_dir: # Path to directory containing the external cohort features (only applicable to deployment)
+  model_path: # /mnt/bulk-curie/peter/fmbenchmark/wsi_moco/finetuning/models/cobra-virchow2/crc/ismsih/fold-0/export.pkl
+  deploy_feature_dir: # /mnt/bulk-curie/peter/fmbenchmark/features/cptac_coad/virchow2-class/STAMP_raw_virchow2
+  model_arch: cobra
+  pretrained: /mnt/bulk-dgx/timlenz/tumpe/outputs/cobra-4fms-1024/2024-10-04-10:34/checkpoints/cobra-4fms-1024-2000.pth.tar
   
   statistics:
     pred_csvs: # Paths to prediction CSVs to plot ROC curves for
       - path/to/patient-preds.csv # only need 1 path when fully training (remove second one)
       - another/path/to/patient-preds.csv # for cross-validation, you will have fold-0, fold-1, fold-k, add below
-    target_label: ${modeling.target_label} # Target label
+    target_label: CANCER_TYPE
     true_class: # Class to consider as positive
-    output_dir: /path/to/store/model_statistics # Path to save ROC curve and statistics to
+    output_dir: /mnt/bulk-curie/peter/fmbenchmark/aligned_vecs/models/chief/lung/cancer_type
 
 heatmaps:
   slide_name: # Name of the slide to create heatmaps for, wildcards allowed, no file extensions
-  feature_dir: ${preprocessing.output_dir} # Path to feature directory
+  feature_dir: /mnt/bulk-curie/peter/fmbenchmark/features/tcga_lung/chief/STAMP_raw_chief
   wsi_dir: # Path to whole-slide image directory.
-  model_path: /path/to/export.pkl # Path to saved model (only applicable to deployment)
-  output_dir: # Path to output directory
+  model_path: /mnt/bulk-curie/peter/fmbenchmark/aligned_vecs/models/virchow2/crc/m_status/fold-4/export.pkl
+  output_dir: /mnt/bulk-curie/peter/fmbenchmark/aligned_vecs/models/chief/lung/cancer_type
   n_toptiles: 8 # Number of toptiles, default is 8
   overview: true # Create final overview image

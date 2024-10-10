@@ -405,7 +405,9 @@ def run_cli(args: argparse.Namespace):
                                   cat_labels=c.cat_labels,
                                   cont_labels=c.cont_labels,
                                   categories=c.categories,
-                                  n_splits=c.n_splits)
+                                  n_splits=c.n_splits,
+                                  model_arch=c.model_arch,
+                                  pretrained=c.pretrained)
         case "deploy":
             require_configs(
                 cfg,

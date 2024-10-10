@@ -5,7 +5,8 @@ sys.path.append("../")
 sys.path.append("../ssl")
 sys.path.append("../../")
 sys.path.append("../../Mamba2MIL")
-sys.path.append("../evaluation/../../Mamba2MIL/mamba")
+#sys.path.append("../../Mamba2MIL/models")
+#sys.path.append("../../Mamba2MIL/mamba")
 from Mamba2MIL.models.MambaMIL import MambaMIL
 
 class Embed(nn.Module):
@@ -15,8 +16,8 @@ class Embed(nn.Module):
         self.head = nn.Sequential(
              nn.LayerNorm(dim),
              nn.Linear(dim, embed_dim),
-             nn.Identity(),
-             #nn.Dropout(),
+             #nn.Identity(),
+             nn.Dropout(0.25),
              nn.SiLU(),
              nn.Linear(embed_dim, embed_dim),
         )
@@ -39,13 +40,21 @@ class MambaMILmocoWrap(nn.Module):
             #nn.LayerNorm(embed_dim),
             nn.Linear(embed_dim,4*embed_dim),
             nn.SiLU(),
-            nn.Identity(),
+            #nn.Identity(),
             #nn.Dropout(),
             nn.Linear(4*embed_dim,c_dim),
             #nn.BatchNorm1d(c_dim),
         )
-    
-    def forward(self, x,get_tile_embs=False,get_weighted_avg=False):
+
+        self.classifier = nn.Linear(embed_dim,num_classes)
+        for param in self.mamba_mil.parameters():
+            param.requires_grad = False
+        for param in self.mamba_mil.attention.parameters():
+            param.requires_grad = True
+        for param in self.mamba_mil.classifier.parameters():
+            param.requires_grad = True
+            
+    def forward(self, x,lens,get_tile_embs=False,get_weighted_avg=False):
        
         
         #if self.use_embed:
@@ -57,7 +66,7 @@ class MambaMILmocoWrap(nn.Module):
         if get_weighted_avg:
             A = self.mamba_mil(embs,hidden_states=False,return_weighting=True)[1]
             #print(f"{A.shape=}")
-            return torch.bmm(A,x)
+            return self.proj(torch.bmm(A,x).squeeze(1))
         logits, _ = self.mamba_mil(embs)
         feats = self.proj(logits.squeeze(1))
         return feats
