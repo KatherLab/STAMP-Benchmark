@@ -1,13 +1,18 @@
 import torch
 import torch.nn as nn
 import sys
-sys.path.append("../")
-sys.path.append("../ssl")
-sys.path.append("../../")
+#sys.path.append("../")
+#sys.path.append("../ssl")
+sys.path.append("/mnt/bulk-neptune/timlenz/tumpe")
 sys.path.append("/mnt/bulk-neptune/timlenz/tumpe/Mamba2MIL")
+print(sys.path)
+#sys.path.append("../../")
+#sys.path.append("../../Mamba2MIL")
 #sys.path.append("../../Mamba2MIL/models")
 #sys.path.append("../../Mamba2MIL/mamba")
 from Mamba2MIL.models.MambaMIL import MambaMIL
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 class Embed(nn.Module):
     def __init__(self, dim, embed_dim=1024):
