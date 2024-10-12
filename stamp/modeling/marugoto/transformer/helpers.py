@@ -54,6 +54,8 @@ def train_categorical_model_(
     categories: Optional[Iterable[str]] = None,
     model_arch: str = "sophia_mil",
     pretrained: Optional[Path] = None,
+    freeze_base: Optional[bool] = None,
+    weighted_avg: Optional[bool] = None,
 ) -> None:
     """Train a categorical model on a cohort's tile's features.
 
@@ -140,6 +142,8 @@ def train_categorical_model_(
         cores=max(1, os.cpu_count() // 4),
         model_arch = model_arch,
         pretrained = pretrained,
+        freeze_base = freeze_base,
+        weighted_avg = weighted_avg,
     )
 
     # save some additional information to the learner to make deployment easier
@@ -243,6 +247,8 @@ def categorical_crossval_(
     categories: Optional[Iterable[str]] = None,
     model_arch: str = "sophia_mil",
     pretrained: Optional[Path] = None,
+    freeze_base: Optional[bool] = None,
+    weighted_avg: Optional[bool] = None,
 ) -> None:
     """Performs a cross-validation for a categorical target.
 
@@ -344,7 +350,8 @@ def categorical_crossval_(
                 fold_path=fold_path, fold_df=fold_train_df, fold=fold, info=info,
                 target_label=target_label, target_enc=target_enc,
                 cat_labels=cat_labels, cont_labels=cont_labels,
-                model_arch=model_arch, pretrained=pretrained)
+                model_arch=model_arch, pretrained=pretrained,freeze_base=freeze_base,
+                weighted_avg=weighted_avg,)
             learn.export()
 
         fold_test_df = df.iloc[test_idxs]
@@ -356,7 +363,8 @@ def categorical_crossval_(
 
 
 def _crossval_train(
-    *, fold_path, fold_df, fold, info, target_label, target_enc, cat_labels, cont_labels, model_arch, pretrained,
+    *, fold_path, fold_df, fold, info, target_label, target_enc, cat_labels, cont_labels, model_arch, pretrained, 
+    freeze_base, weighted_avg,
 ):
     """Helper function for training the folds."""
     assert fold_df.PATIENT.nunique() == len(fold_df)
@@ -390,6 +398,8 @@ def _crossval_train(
         cores=max(1, os.cpu_count() // 4),
         model_arch=model_arch,
         pretrained=pretrained,
+        freeze_base=freeze_base,
+        weighted_avg=weighted_avg,
     )
     learn.target_label = target_label
     learn.cat_labels, learn.cont_labels = cat_labels, cont_labels

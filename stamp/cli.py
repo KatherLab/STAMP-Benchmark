@@ -407,7 +407,9 @@ def run_cli(args: argparse.Namespace):
                                   categories=c.categories,
                                   n_splits=c.n_splits,
                                   model_arch=c.model_arch,
-                                  pretrained=c.pretrained)
+                                  pretrained=c.pretrained,
+                                  freeze_base=c.freeze_base,
+                                  weighted_avg=c.weighted_avg,)
         case "deploy":
             require_configs(
                 cfg,

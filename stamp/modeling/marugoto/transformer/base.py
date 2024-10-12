@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from .cobra import MambaMILmocoWrap
 from .data import make_dataset, SKLearnEncoder
-from .SophiaMIL import WagnerMIL
+from .swMIL import WagnerMIL
 
 
 __all__ = ['train', 'deploy']
@@ -38,6 +38,8 @@ def train(
     cores: int = 8,
     model_arch: str = "sophia_mil",
     pretrained: Optional[Path] = None,
+    freeze_base: Optional[bool] = None,
+    weighted_avg: Optional[bool] = None,
     plot: bool = False
 ) -> Learner:
     """Train a MLP on image features.
@@ -95,7 +97,8 @@ def train(
         input_dim = embed_dim
         layer = 2
         att_dim = 256
-        model = MambaMILmocoWrap(embed_dim,c_dim,input_dim,layer=layer,att_dim=att_dim) 
+        model = MambaMILmocoWrap(embed_dim,c_dim,input_dim,layer=layer,att_dim=att_dim,
+                                 get_weighted_avg=weighted_avg,freeze_base=freeze_base) 
         if pretrained:
             chkpt = torch.load(pretrained)
             if "state_dict" in list(chkpt.keys()):
@@ -104,7 +107,10 @@ def train(
             print(f"Loading state dict from {pretrained}")
             msg=model.load_state_dict(base_enc)
             print(msg)
-        model.proj = nn.Linear(1280,len(target_enc.categories_[0]))
+        if weighted_avg:
+            model.proj = nn.Linear(feature_dim,len(target_enc.categories_[0]))
+        else:
+            model.proj = nn.Linear(embed_dim,len(target_enc.categories_[0]))
             
     # TODO:
     # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?
@@ -163,7 +169,7 @@ def deploy(
     test_df: pd.DataFrame, learn: Learner, *,
     target_label: Optional[str] = None,
     cat_labels: Optional[Sequence[str]] = None, cont_labels: Optional[Sequence[str]] = None,
-    device: str = 'cpu'
+    device: str = 'cpu', 
 ) -> pd.DataFrame:
     assert test_df.PATIENT.nunique() == len(test_df), 'duplicate patients!'
     #assert (len(add_label)

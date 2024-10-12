@@ -4,7 +4,7 @@ import sys
 sys.path.append("../")
 sys.path.append("../ssl")
 sys.path.append("../../")
-sys.path.append("../../Mamba2MIL")
+sys.path.append("/mnt/bulk-neptune/timlenz/tumpe/Mamba2MIL")
 #sys.path.append("../../Mamba2MIL/models")
 #sys.path.append("../../Mamba2MIL/mamba")
 from Mamba2MIL.models.MambaMIL import MambaMIL
@@ -26,7 +26,7 @@ class Embed(nn.Module):
         return self.head(x)
 
 class MambaMILmocoWrap(nn.Module):
-    def __init__(self,embed_dim, c_dim,input_dim=1536,layer=4,att_dim=256):
+    def __init__(self,embed_dim, c_dim,input_dim=1536,layer=4,att_dim=256,get_weighted_avg=False,freeze_base=False):
         super().__init__()
         self.embed = nn.ModuleDict({#"512":Embed(512,embed_dim),
                                     "768":Embed(768,embed_dim),
@@ -47,15 +47,17 @@ class MambaMILmocoWrap(nn.Module):
         )
 
         #self.classifier = nn.Linear(embed_dim,num_classes)
-        for param in self.mamba_mil.parameters():
-            param.requires_grad = False
-        for param in self.mamba_mil.attention.parameters():
-            param.requires_grad = True
-        for param in self.mamba_mil.classifier.parameters():
-            param.requires_grad = True
+        if freeze_base:
+            for param in self.mamba_mil.parameters():
+                param.requires_grad = False
+            for param in self.mamba_mil.attention.parameters():
+                param.requires_grad = True
+            for param in self.mamba_mil.classifier.parameters():
+                param.requires_grad = True
+                
+        self.get_weighted_avg = get_weighted_avg
             
-    def forward(self, x,lens,get_tile_embs=False,get_weighted_avg=True):
-       
+    def forward(self, x,lens,get_tile_embs=False):
         
         #if self.use_embed:
         embs = self.embed[str(x.shape[-1])](x)
@@ -63,7 +65,7 @@ class MambaMILmocoWrap(nn.Module):
         #    embs = x
         if get_tile_embs:
             return self.mamba_mil(embs)[1]
-        if get_weighted_avg:
+        if self.get_weighted_avg:
             A = self.mamba_mil(embs,hidden_states=False,return_weighting=True)[1]
             #print(f"{A.shape=}")
             return self.proj(torch.bmm(A,x).squeeze(1))

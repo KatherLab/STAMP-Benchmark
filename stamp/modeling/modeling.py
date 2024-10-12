@@ -17,6 +17,8 @@ def main():
     parser.add_argument("--categories", type=str, nargs="+", default=None, help="Categories")
     parser.add_argument("--model_arch", type=str, default="WagnerMIL", help="MIL Architecture")
     parser.add_argument("--pretrained", type=Path, default=None, help="Path to the pretrained model")
+    parser.add_argument("--freeze_base", type=bool, default=None, help="freeze base")
+    parser.add_argument("--get_weighted_avg", type=bool, default=None, help="weighted_avg")
 
     
     group = parser.add_mutually_exclusive_group()
@@ -59,7 +61,9 @@ def main():
                               categories=args.categories,
                               n_splits=args.n_splits,
                               model_arch=args.model_arch,
-                              pretrained=args.pretrained
+                              pretrained=args.pretrained,
+                              freeze_base=freeze_base,
+                              weighted_avg=weighted_avg,
                               )
 
 
