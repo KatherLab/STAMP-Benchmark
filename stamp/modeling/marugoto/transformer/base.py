@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .cobra import MambaMILmocoWrap
+from .cobra import Cobra
 from .data import make_dataset, SKLearnEncoder
 from .swMIL import WagnerMIL
 
@@ -93,17 +93,16 @@ def train(
         )
     elif model_arch == "cobra":
         embed_dim = 768 
-        c_dim = 512
-        input_dim = embed_dim
+        c_dim = 256
         layer = 2
-        att_dim = 256
-        model = MambaMILmocoWrap(embed_dim,c_dim,input_dim,layer=layer,att_dim=att_dim,
-                                 get_weighted_avg=weighted_avg,freeze_base=freeze_base) 
+        model = Cobra(embed_dim,c_dim,layer=layer,
+                                 freeze_base=freeze_base) 
         if pretrained:
             chkpt = torch.load(pretrained)
+            enc = "momentum_enc"
             if "state_dict" in list(chkpt.keys()):
                 chkpt = chkpt["state_dict"]
-            base_enc = {k.split("enc.")[-1]:v for k,v in chkpt.items() if "enc" in k}
+            base_enc = {k.split(f"{enc}.")[-1]:v for k,v in chkpt.items() if enc in k}
             print(f"Loading state dict from {pretrained}")
             msg=model.load_state_dict(base_enc)
             print(msg)
@@ -111,7 +110,10 @@ def train(
             model.proj = nn.Linear(feature_dim,len(target_enc.categories_[0]))
         else:
             model.proj = nn.Linear(embed_dim,len(target_enc.categories_[0]))
-            
+        
+    else:
+        print(f"{model_arch} is not implemented! Options: cobra")
+    
     # TODO:
     # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?
     # maybe add at least some dropout?

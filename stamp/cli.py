@@ -6,6 +6,8 @@ from typing import Iterable, Optional
 import shutil
 import torch
 import timm
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 NORMALIZATION_TEMPLATE_URL = "https://github.com/Avic3nna/STAMP/blob/main/resources/normalization_template.jpg?raw=true"
 CTRANSPATH_WEIGHTS_URL = "https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download"

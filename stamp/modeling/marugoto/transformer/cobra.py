@@ -1,79 +1,86 @@
 import torch
 import torch.nn as nn
 import sys
-#sys.path.append("../")
-#sys.path.append("../ssl")
-sys.path.append("/mnt/bulk-neptune/timlenz/tumpe")
-sys.path.append("/mnt/bulk-neptune/timlenz/tumpe/Mamba2MIL")
-print(sys.path)
-#sys.path.append("../../")
-#sys.path.append("../../Mamba2MIL")
-#sys.path.append("../../Mamba2MIL/models")
-#sys.path.append("../../Mamba2MIL/mamba")
-from Mamba2MIL.models.MambaMIL import MambaMIL
+
+from .mamba2 import Mamba2Enc
+from .abmil import BatchedABMIL
+import torch.nn.functional as F
+from einops import rearrange
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 class Embed(nn.Module):
-    def __init__(self, dim, embed_dim=1024):
+    def __init__(self, dim, embed_dim=1024,dropout=0.25):
         super(Embed, self).__init__()
 
         self.head = nn.Sequential(
              nn.LayerNorm(dim),
              nn.Linear(dim, embed_dim),
-             #nn.Identity(),
-             #nn.Dropout(0.25),
+             nn.Dropout(dropout) if dropout else nn.Identity(),
              nn.SiLU(),
              nn.Linear(embed_dim, embed_dim),
         )
 
     def forward(self, x):
-        return self.head(x)
+        return self.head(x) 
 
-class MambaMILmocoWrap(nn.Module):
-    def __init__(self,embed_dim, c_dim,input_dim=1536,layer=4,att_dim=256,get_weighted_avg=False,freeze_base=False):
+class Cobra(nn.Module):
+    def __init__(self,embed_dim, c_dim,layer=4,dropout=0.25,num_heads=8,freeze_base=True):
         super().__init__()
+        
         self.embed = nn.ModuleDict({#"512":Embed(512,embed_dim),
-                                    "768":Embed(768,embed_dim),
-                                    "1024":Embed(1024,embed_dim),
-                                  "1280":Embed(1280,embed_dim),
-                                  "1536":Embed(1536,embed_dim),})
-        #if use_embed:
-        input_dim = embed_dim
-        self.mamba_mil = MambaMIL(input_dim,embed_dim,n_classes=embed_dim,layer=layer,att_dim=att_dim)
+                                   "768":Embed(768,embed_dim),
+                                   "1024":Embed(1024,embed_dim),
+                                   "1280":Embed(1280,embed_dim),
+                                    "1536":Embed(1536,embed_dim),})
+        
+        self.norm = nn.LayerNorm(embed_dim)
+        
+        self.mamba_enc = Mamba2Enc(embed_dim,embed_dim,n_classes=embed_dim,layer=layer,dropout=dropout)
         self.proj = nn.Sequential(
-            #nn.LayerNorm(embed_dim),
+            nn.LayerNorm(embed_dim),
             nn.Linear(embed_dim,4*embed_dim),
             nn.SiLU(),
-            #nn.Identity(),
-            #nn.Dropout(),
+            nn.Dropout(dropout) if dropout else nn.Identity(),
             nn.Linear(4*embed_dim,c_dim),
-            #nn.BatchNorm1d(c_dim),
+            nn.BatchNorm1d(c_dim),
         )
 
-        #self.classifier = nn.Linear(embed_dim,num_classes)
-        if freeze_base:
-            for param in self.mamba_mil.parameters():
-                param.requires_grad = False
-            for param in self.mamba_mil.attention.parameters():
-                param.requires_grad = True
-            for param in self.mamba_mil.classifier.parameters():
-                param.requires_grad = True
-                
-        self.get_weighted_avg = get_weighted_avg
-            
-    def forward(self, x,lens,get_tile_embs=False):
         
-        #if self.use_embed:
-        embs = self.embed[str(x.shape[-1])](x)
-        #else:
-        #    embs = x
-        if get_tile_embs:
-            return self.mamba_mil(embs)[1]
-        if self.get_weighted_avg:
-            A = self.mamba_mil(embs,hidden_states=False,return_weighting=True)[1]
-            #print(f"{A.shape=}")
-            return self.proj(torch.bmm(A,x).squeeze(1))
-        logits, _ = self.mamba_mil(embs)
-        feats = self.proj(logits.squeeze(1))
-        return feats
+        self.num_heads = num_heads
+        #self.abmil = BatchedABMIL(embed_dim,hidden_dim=att_dim,dropout=dropout,n_classes=embed_dim)
+        self.attn = nn.ModuleList([BatchedABMIL(input_dim=int(embed_dim/num_heads),hidden_dim=int(embed_dim/num_heads),dropout=dropout,n_classes=1) for _ in range(self.num_heads)])
+        
+        if freeze_base:
+            for param in self.embed.parameters():
+                param.requires_grad = False
+            for param in self.mamba_enc.parameters():
+                param.requires_grad = False
+        
+    def forward(self, x):
+
+        logits = self.embed[str(x.shape[-1])](x)
+
+        h = self.norm(self.mamba_enc(logits))#+self.norm(logits)
+        #print(f"{logits.shape=}")
+        
+        
+        if self.num_heads > 1:
+            h_ = rearrange(h, 'b t (e c) -> b t e c',c=self.num_heads)
+
+            attention = []
+            for i, attn_net in enumerate(self.attn):
+                _, processed_attention = attn_net(h_[:, :, :, i], return_raw_attention = True) # , return_raw_attention = True
+                attention.append(processed_attention)
+                
+            A = torch.stack(attention, dim=-1)
+
+            A = rearrange(A, 'b t e c -> b t (e c)',c=self.num_heads).mean(-1).unsqueeze(-1)
+            A = torch.transpose(A,2,1)
+            A = F.softmax(A, dim=-1) 
+        else: 
+            A = self.attn[0](h)
+        
+        h = torch.bmm(A,x).squeeze(1)
+        feats = self.proj(h)
+        return feats, h
