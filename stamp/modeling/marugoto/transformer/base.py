@@ -102,7 +102,7 @@ def train(
             enc = "momentum_enc"
             if "state_dict" in list(chkpt.keys()):
                 chkpt = chkpt["state_dict"]
-            base_enc = {k.split(f"{enc}.")[-1]:v for k,v in chkpt.items() if enc in k}
+            base_enc = {k.split(f"{enc}.")[-1].replace("mamba_mil","mamba_enc"):v for k,v in chkpt.items() if enc in k}
             print(f"Loading state dict from {pretrained}")
             msg=model.load_state_dict(base_enc)
             print(msg)

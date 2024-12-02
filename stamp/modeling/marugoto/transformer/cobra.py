@@ -57,7 +57,7 @@ class Cobra(nn.Module):
             for param in self.mamba_enc.parameters():
                 param.requires_grad = False
         
-    def forward(self, x):
+    def forward(self, x, lens=None):
 
         logits = self.embed[str(x.shape[-1])](x)
 
